@@ -1,0 +1,30 @@
+  private static List<Integer> list = new ArrayList<>();//use to return the component of communities
+	private static int coresize;
+	private static int graph_size;// the total size of the whole graph (the origin graph)
+	private static int c_size; // the current graph size after some nodes removed (the size of the k core)
+	private static int dim_size[] = new int[11 + 1]; // the number of nodes in each dimension
+	private static int k; // the coreness of the skyline community
+	private static int key_node[];
+	private static node vert[][];//stores node of all dimensions
+	private static HashMap<Integer,Set<Integer>> Neighbors;//nodes' neighbors
+	private static int visit[];//a array of whether the corresponding node is pruned or not
+	private static int core[];//coresize of nodes
+	private static int deg[];
+	private static LC LCP[] = new LC[11];//corner points
+	private static int Degree[];
+	private static int Deg[];
+	private static res2 RES[] = new res2[11]; // store skyline community at each dimension
+	private static Snode neighbour[];
+	private static List visit_record;//
+	private static double atrributes[][];
+	private static int sub_bound[];//a array to support accelerating strategies
+	public static int d;
+	private static int graphSize;
+	private static Vertex[] graph;
+	public static int count;
+	public static double bound[];//the biggest values of all nodes in all dimensions
+	public static double Bound[];
+	public static double weight[];//the weight vector
+	public static HashMap<Integer,Set<Integer>> d_tmp_graph;
+	public static double Score_min;//the value that rank r of all the skyline communities algorithm has queried
+	public static int r;//the number of communities users need
