@@ -1,0 +1,244 @@
+public static double DimMax(int dL, int dH, Constraint C) { // compute the max value at the (dL)th dimension,DimMax2 and DimMax1 only differs at FindSubgraph
+		recover(dL + 1); // recover the status of the last dimension
+		LD_degree_calculation(dL + 1); // compute degree of last dimension
+		FindSubgraph(dL, dH, C);
+		sort_by_attribute(0, dim_size[dL], dL);
+		int ptr = 0;
+		int fg = 1;
+		int unode;
+		double maxval = 0;
+		visit_record.clear();
+		list.clear();
+		while (true) {
+			ptr = find_next_node(ptr, dim_size[dL], dL);
+			if (ptr == -1) {
+				break;
+			}
+			unode = vert[dL][ptr].nodeId;
+			maxval = Math.max(maxval, atrributes[unode][dL]);
+			key_node[dL] = unode;
+			list.clear();
+			fg = DFS(unode, dL, dH, C);
+			if (fg == 0) break;
+			ptr = find_next_node(ptr, dim_size[dL], dL);
+			if (ptr == -1) {
+				break;
+			}
+			visit_record.addAll(list);
+		}
+		return maxval;
+	}
+
+public static void recover(int d) {
+		for (int i = 0; i < dim_size[d]; i++)
+			visit[vert[d][i].nodeId] = 0;
+	}
+
+public static void LD_degree_calculation(int d) {
+		int u;
+		int dg;
+		Snode sn;
+		for (int i = 0; i < dim_size[d]; i++) {
+			u = vert[d][i].nodeId;
+			dg = 0;
+			sn = neighbour[u].next;
+			while (sn != null) {
+				int v = sn.nodeId;
+				if (visit[v] == 0) {
+					dg++;
+				}
+				sn = sn.next;
+			}
+			deg[u] = dg;
+		}
+		sn = null;
+	}
+
+public static void FindSubgraph(int dL, int dH, Constraint C) {// find the subgraph with each node satisfying the constraint C.
+		int idx = 0;
+		for (int i = 0; i < dim_size[dL + 1]; i++) {
+			if (visit[vert[dL + 1][i].nodeId] == 1)
+				continue;
+			boolean flag = true;
+			for (int j = 1; j < dL; j++) {//those are the dimensions that calculated,must strictly meet greater condition
+				if (atrributes[vert[dL + 1][i].nodeId][j] <= C.corner[j]) {
+					flag = false;
+					break;
+				}
+			}
+			if (flag) {
+				for (int j = dL; j < dH; j++) {//those are the dimensions where fixed nodes belong to,so nodes's values in those dimension just to meet equals or greater than condition
+					if (atrributes[vert[dL + 1][i].nodeId][j] < C.corner[j]) {
+						flag = false;
+						break;
+					}
+				}
+			}
+			boolean f = true;
+			if (flag && count >= r) {//when algorithms find r communities, prune nodes with pruning strategy
+				double front = 0, tail = 0;
+				for (int j = 1; j <= dL; j++)//if it is DimMax2
+					front += atrributes[vert[dL + 1][i].nodeId][j]* weight[j] / bound[j];
+				for (int j = dL + 1; j < dH; j++)
+					tail += C.corner[j] * weight[j] / bound[j];
+				double cut = front+tail;//if it is DimMax1 cut is score of the node:vert[dL + 1][i].nodeId
+				if (cut <= Score_min)
+					f = false;
+			}
+			if (!flag || !f) {
+				delDFS(vert[dL + 1][i].nodeId);// doesn't satisfy the constraint
+			}
+		}
+		for (int i = 0; i < dim_size[dL + 1]; i++) {
+			if (visit[vert[dL + 1][i].nodeId] == 0) {
+				vert[dL][idx++] = vert[dL + 1][i];
+			}
+		}
+		dim_size[dL] = idx;
+	}
+
+public static void sort_by_attribute(int st, int ed, int d) {
+		Comparator com = newCom(d);
+		Arrays.sort(vert[d], st, ed, com);
+	}
+
+public static void ImpTRPBSHD(int dL, int dH, Constraint C,int turn) { // dL: the current dimension; dH: the starting dimension; turn :the current query turn
+		PriorityQueue<Constraint> Q = new PriorityQueue<Constraint>(new Comparator<Constraint>() {
+			@Override
+			public int compare(Constraint o1, Constraint o2) {
+				// TODO Auto-generated method stub
+				if (o1.corner[dL] < o2.corner[dL]) {
+					return 1;
+				} else if (o1.corner[dL] > o2.corner[dL]) {
+					return -1;
+				} else {
+					return 0;
+				}
+			}
+		});
+		while (!Q.isEmpty()) {
+			Q.poll();
+		}
+		if (dL == 3) {
+			ImpTRPBS3D(dL, dH, C,turn);
+			return;
+		}
+		C.corner[dL] = 0;
+		double c;
+		if(turn==1)
+			c = DimMax2(dL, dH, C);
+		else
+			c = DimMax1(dL, dH, C);
+		if (c == 0.0)
+			return;
+		Constraint cstt;
+		cstt = C;
+		cstt.d = dL;
+		cstt.corner[dL] = c;
+		cstt.keyNodes[dL] = key_node[dL];
+		Q.add(cstt);
+		Constraint cstt1 = new Constraint();
+		Result sl = new Result();
+		LCP[dL - 1].LC.clear();
+		LCP[dL - 1].LC.add(cstt1);
+		while (!Q.isEmpty()) {
+			c = Q.peek().corner[dL];
+			RES[dL - 1].result.clear();
+			while ((!Q.isEmpty()) && (Q.peek().corner[dL] == c)) {
+				cstt1 = Q.peek();
+				Q.poll();
+				recover(dL + 1);
+				LD_degree_calculation(dL + 1);
+				if(turn==1)
+					FindSubgraph2(dL, dH, cstt1);
+				else
+					FindSubgraph1(dL, dH, cstt1);
+				ImpTRPBSHD(dL - 1, dH, cstt1,turn);
+			}
+			for (int i = 0; i < RES[dL - 1].result.size(); i++) {
+				sl = RES[dL - 1].result.get(i);
+				Result sl2 = sl;
+				sl2.value[dL] = c;
+				int len = RES[dL].result.size();
+				int idctr = 0;
+				for (int k = 0; k < len; k++) { // There may be some identical skyline communities.
+					idctr = 1;
+					for (int j = 1; j <= dL; j++) {
+						if (RES[dL].result.get(k).value[j] < sl2.value[j]) { // >=
+							idctr = 0;
+							break;
+						}
+					}
+					if (idctr == 1)
+						break;
+				}
+				if (idctr == 0) {
+					RES[dL].result.add(sl2); // A new skyline has been found.
+					UpdateCornerPoints(sl2, dL - 1); // update corner points
+				}
+			}
+			ArrayList<Constraint> LC = LCP[dL - 1].LC;
+			Iterator<Constraint> it = LC.iterator();
+			while (it.hasNext()) {
+				cstt = it.next();
+				//
+				if(LC.size()==1)
+				{
+					boolean flag = true;
+					for (int idex = 1; idex < dL; idex++)
+						if (cstt.corner[idex] != 0) {
+							flag = false;
+							break;
+						}
+					if (flag)
+						continue;
+				}
+				//
+				Constraint cstt_temp = new Constraint(cstt);
+				if (cstt_temp.corner[0] == 1) {
+					continue;
+				}
+				cstt_temp.d = dL;
+				cstt_temp.corner[dL] = 0;
+				for (int j = dL + 1; j <= dH; j++) {
+					cstt_temp.corner[j] = C.corner[j];
+					cstt_temp.keyNodes[j] = key_node[j];
+				}
+				if(turn==1)
+					cstt_temp.corner[dL] = DimMax2_New(dL, dH, cstt_temp);
+				else
+					cstt_temp.corner[dL] = DimMax1_New(dL, dH, cstt_temp);
+				if (cstt_temp.corner[dL] > 0.0) {
+					cstt_temp.keyNodes[dL] = key_node[dL];
+					Q.add(cstt_temp);
+				}
+				cstt.corner[0] = 1;
+			}
+			//
+			if(dL==dH-1&&Q.isEmpty())
+			{
+				if(turn==1)
+					turn=0;
+				else
+					break;
+				ArrayList<Constraint> LCtmp = LCP[dL - 1].LC;
+				Iterator<Constraint> itmp = LCtmp.iterator();
+				while (itmp.hasNext()) {
+					cstt = itmp.next();
+					Constraint cstt_temp = new Constraint(cstt);
+					cstt_temp.d = dL;
+					cstt_temp.corner[dL] = 0;
+					for (int j = dL + 1; j <= dH; j++) {
+						cstt_temp.corner[j] = C.corner[j];
+						cstt_temp.keyNodes[j] = key_node[j];
+					}
+					cstt_temp.corner[dL] = DimMax2_New(dL, dH, cstt);
+					if (cstt_temp.corner[dL] > 0.0) {
+						cstt_temp.keyNodes[dL] = key_node[dL];
+						Q.add(cstt_temp);
+					}
+				}
+			}
+			//
+		}
+	}
