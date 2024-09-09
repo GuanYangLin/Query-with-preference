@@ -1,0 +1,151 @@
+public static void load_data_New(int k, int dL, int dH) {
+		int unode = -1, vnode, ucore;
+		int idx = 0;
+		String core_path;
+		String list_path;
+		String attribue_path;
+		core_path = "/Users/zz/Downloads/copy1.0/dblp/core_dblp_correlation.txt";//core file path
+		list_path = "/Users/zz/Downloads/copy1.0/dblp/list_dblp_correlation.txt";//neighbor file path
+		attribue_path = "/Users/zz/Downloads/copy1.0/dblp/attribute_dblp_correlation.txt";//attribute file path
+		File file1 = new File(core_path);
+		if (file1.isFile() && file1.exists()) {
+			try {
+				InputStreamReader isr = new InputStreamReader(new FileInputStream(file1), "utf-8");
+				BufferedReader br = new BufferedReader(isr);
+				String lineTxt = null;
+				try {
+					while ((lineTxt = br.readLine()) != null) {
+						String info[] = lineTxt.split(",");//change if your form is different
+						unode = Integer.parseInt(info[0]);
+						ucore = Integer.parseInt(info[1]);
+						if (unode == -1) {
+							break;
+						}
+						core[unode] = ucore;
+						deg[unode] = 0;
+						visit[unode] = 0;
+						if (ucore < k) {
+							visit[unode] = 1;
+						} else {
+							coresize++;
+						}
+						unode = -1;
+					}
+					br.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("¶ÁÈ¡Òì³£");
+			}
+		} else {
+			System.out.println("没有找到Core值文件");
+		}
+
+		File file2 = new File(list_path);
+		if (file2.isFile() && file2.exists()) {
+			try {
+				InputStreamReader isr = new InputStreamReader(new FileInputStream(file2), "utf-8");
+				BufferedReader br = new BufferedReader(isr);
+				String lineTxt = null;
+				try {
+					while ((lineTxt = br.readLine()) != null) {
+						String info[] = lineTxt.split(",");//change if your form is different
+						String info_adj[] = info[1].split(" ");//change if your form is different
+						unode = Integer.parseInt(info[0]);
+						if (core[unode] < k) {
+							continue;
+						}
+						List<Integer> tmp = new ArrayList<>();
+						for (int i = 0; i < info_adj.length; i++)
+							if (core[Integer.parseInt(info_adj[i])] >= k)
+								tmp.add(Integer.parseInt(info_adj[i]));
+						Vertex v = new Vertex();
+						v.setNodeId(unode);
+						v.setFriends(tmp);
+						graph[unode] = v;
+						for (int i = 0; i < info_adj.length; i++) {
+							vnode = Integer.parseInt(info_adj[i]);
+							if (core[vnode] < k) {
+								continue;
+							}
+							Snode sn = new Snode();
+							sn.nodeId = vnode;
+							if (neighbour[unode].next == null) {
+								neighbour[unode].next = sn;
+							} else {
+								Snode msn;
+								msn = neighbour[unode].next;
+								neighbour[unode].next = sn;
+								sn.next = msn;
+							}
+						}
+					}
+					br.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("¶ÁÈ¡Òì³£");
+			}
+		} else {
+			System.out.println("没有找到list文件");
+		}
+
+
+		File file3 = new File(attribue_path);
+		if (file3.isFile() && file3.exists()) {
+			try {
+				InputStreamReader isr = new InputStreamReader(new FileInputStream(file3), "utf-8");
+				BufferedReader br = new BufferedReader(isr);
+				String lineTxt = null;
+				try {
+					while ((lineTxt = br.readLine()) != null) {
+						String info[] = lineTxt.split(",");//change if your form is different
+						String info_att[] = info[1].split(" ");//change if your form is different
+						unode = Integer.parseInt(info[0]);
+						if (unode == -1) {
+							break;
+						}
+						if (core[unode] >= k) {
+							vert[dL + 1][idx++].nodeId = unode;
+							for (int j = 0; j < d; j++) {//j < info_att.length
+								double atrribute = Double.parseDouble(info_att[j]);
+								atrributes[unode][j + 1] = atrribute;
+								bound[j + 1] = Math.max(atrribute, bound[j + 1]);
+							}
+						}
+						unode = -1;
+					}
+					br.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			} catch (UnsupportedEncodingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("¶ÁÈ¡Òì³£");
+			}
+		} else {
+			System.out.println("没有加载到数据文件");
+		}
+		c_size = idx;
+		dim_size[dL + 1] = c_size;
+		System.out.println("加载到的结点的个数为" + idx);
+	}
